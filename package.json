@@ -1,0 +1,8 @@
+{
+  "name": "action-release-downloader",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Download GitHub release assets, including drafts",
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=24" }
+}

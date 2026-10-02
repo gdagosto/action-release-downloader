@@ -1,0 +1,24 @@
+name: Download release assets
+description: Download matching assets from the first release matching a tag, including drafts.
+inputs:
+  tag:
+    description: Exact release tag.
+    required: true
+  filename:
+    description: Case-sensitive asset name or wildcard pattern (* and ?).
+    required: true
+  repository:
+    description: Repository in owner/repo format.
+    default: ${{ github.repository }}
+  token:
+    description: Token with access to the target repository and its draft releases.
+    default: ${{ github.token }}
+  destination:
+    description: Destination directory, relative to the workspace or absolute.
+    default: ${{ github.workspace }}
+outputs:
+  file-paths:
+    description: JSON array of absolute paths to downloaded assets, in API order.
+runs:
+  using: node24
+  main: index.js
