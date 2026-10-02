@@ -4,8 +4,8 @@ inputs:
   tag:
     description: Exact release tag.
     required: true
-  filename:
-    description: Case-sensitive asset name or wildcard pattern (* and ?).
+  artifacts:
+    description: Comma-separated, case-sensitive asset names or wildcard patterns (* and ?).
     required: true
   repository:
     description: Repository in owner/repo format.

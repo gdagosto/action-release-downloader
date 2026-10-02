@@ -11,7 +11,7 @@ async function fixture(t, routes) {
   const destination = await mkdtemp(path.join(os.tmpdir(), 'release-action-'));
   t.after(() => rm(destination, { recursive: true, force: true }));
   const calls = [];
-  const options = { tag: 'v1', filename: '*.zip', repository: 'owner/repo', token: 'test-token', destination,
+  const options = { tag: 'v1', artifacts: '*.zip', repository: 'owner/repo', token: 'test-token', destination,
     fetchImpl: async (url, init) => {
       assert.equal(init.headers.Authorization, 'Bearer test-token');
       calls.push({ url, accept: init.headers.Accept });
@@ -53,6 +53,26 @@ test('paginates releases and assets, chooses first matching draft, and overwrite
 test('fails when no release matches', async t => {
   const { options } = await fixture(t, { 'releases?per_page=100&page=1': [] });
   await assert.rejects(download(options), /No accessible release/);
+});
+
+test('combines comma-separated names and patterns without duplicate downloads', async t => {
+  const { options, calls, destination } = await fixture(t, {
+    'releases?per_page=100&page=1': [{ id: 1, tag_name: 'v1' }],
+    'releases/1/assets?per_page=100&page=1': [
+      { id: 2, name: 'app.zip' }, { id: 3, name: 'checksums.txt' }, { id: 4, name: 'skip.txt' }],
+    'releases/assets/2': 'archive',
+    'releases/assets/3': 'checksum',
+  });
+  options.artifacts = ' checksums.txt, *.zip, app.zip, , missing-* ';
+  assert.deepEqual(await download(options), [path.join(destination, 'app.zip'), path.join(destination, 'checksums.txt')]);
+  assert.equal(calls.filter(call => call.accept === 'application/octet-stream').length, 2);
+});
+
+test('rejects a comma-separated list with no nonempty entries', async t => {
+  const { options, calls } = await fixture(t, {});
+  options.artifacts = ' , , ';
+  await assert.rejects(download(options), /at least one asset name or pattern/);
+  assert.equal(calls.length, 0);
 });
 
 test('fails when first match has no assets, without trying later releases', async t => {

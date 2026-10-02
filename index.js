@@ -16,9 +16,11 @@ function matcher(pattern) {
   return new RegExp(`^${expression}$`, 'su');
 }
 
-async function download({ tag, filename, repository, token, destination,
+async function download({ tag, artifacts, repository, token, destination,
   apiUrl = 'https://api.github.com', fetchImpl = fetch }) {
-  if (!tag || !filename || !token) throw new Error('tag, filename, and token are required.');
+  if (!tag || !artifacts || !token) throw new Error('tag, artifacts, and token are required.');
+  const patterns = artifacts.split(',').map(value => value.trim()).filter(Boolean).map(matcher);
+  if (!patterns.length) throw new Error('artifacts must contain at least one asset name or pattern.');
   if (!/^[^/\s]+\/[^/\s]+$/.test(repository || '')) {
     throw new Error('repository must have the form owner/repo.');
   }
@@ -48,11 +50,10 @@ async function download({ tag, filename, repository, token, destination,
   }
   if (!release) throw new Error(`No accessible release matches tag ${JSON.stringify(tag)} in ${repository}.`);
   const matches = [];
-  const pattern = matcher(filename);
   for await (const items of pages(`releases/${release.id}/assets`)) {
-    matches.push(...items.filter(asset => pattern.test(asset.name)));
+    matches.push(...items.filter(asset => patterns.some(pattern => pattern.test(asset.name))));
   }
-  if (!matches.length) throw new Error(`No assets match ${JSON.stringify(filename)} in release ${release.id}.`);
+  if (!matches.length) throw new Error(`No assets match ${JSON.stringify(artifacts)} in release ${release.id}.`);
   const directory = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd(), destination || '.');
   const files = matches.map(asset => {
     if (!asset.name || asset.name === '.' || asset.name === '..' || /[/\\\x00-\x1f]/.test(asset.name)) {
@@ -77,7 +78,7 @@ async function download({ tag, filename, repository, token, destination,
 
 async function main() {
   const input = name => (process.env[`INPUT_${name.toUpperCase()}`] || '').trim();
-  const files = await download({ tag: input('tag'), filename: input('filename'),
+  const files = await download({ tag: input('tag'), artifacts: input('artifacts'),
     repository: input('repository') || process.env.GITHUB_REPOSITORY,
     token: input('token'), destination: input('destination'), apiUrl: process.env.GITHUB_API_URL });
   if (!process.env.GITHUB_OUTPUT) throw new Error('GITHUB_OUTPUT is not set.');

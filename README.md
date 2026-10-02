@@ -11,7 +11,7 @@ steps:
     id: download
     with:
       tag: v1.2.3
-      filename: '*.zip'
+      artifacts: '*.zip, checksums.txt'
       destination: downloads
   - env:
       FILE_PATHS: ${{ steps.download.outputs.file-paths }}
@@ -23,7 +23,9 @@ Replace `OWNER` and `REF` with the repository owner and a published tag, branch,
 | Input | Required | Default | Description |
 | --- | --- | --- | --- |
 | `tag` | Yes | | Exact, case-sensitive release tag. |
-| `filename` | Yes | | Exact asset name or wildcard pattern. `*` matches any characters; `?` matches one character. Matching is case-sensitive; other characters are literal. |
+| `artifacts` | Yes | | Comma-separated exact asset names or wildcard patterns, for example `*.zip, checksums.txt`. `*` matches any characters; `?` matches one character. Matching is case-sensitive; other characters are literal. |
+
+Whitespace around each comma-separated entry is trimmed and empty entries are ignored. An asset matching multiple entries is downloaded once, in API order. Individual entries may match nothing; the action fails if the entire list matches no assets. Asset names containing commas cannot be selected literally with this syntax; use a wildcard pattern instead.
 | `repository` | No | `${{ github.repository }}` | Target repository as `owner/repo`. |
 | `token` | No | `${{ github.token }}` | Token authorized for the target repository. |
 | `destination` | No | `${{ github.workspace }}` | Destination directory. Relative paths resolve against the workflow workspace. |
