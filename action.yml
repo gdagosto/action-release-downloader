@@ -1,4 +1,4 @@
-name: Download release assets
+name: action-release-downloader
 description: Download matching assets from the first release matching a tag, including drafts.
 inputs:
   tag:
